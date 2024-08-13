@@ -84,7 +84,7 @@ export class AppComponent implements AfterViewInit {
         trigger: '.parent',
         start: 'top top',
         scrub: 2,
-        markers: true,
+        // markers: true,
       }
     }).to(this.frames, {
       currentIndex: this.frames.maxIndex,
