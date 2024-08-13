@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger); // Register ScrollTrigger with gsap
+gsap.registerPlugin(ScrollTrigger);
 
 interface Frame {
   currentIndex: number;
@@ -21,20 +21,30 @@ export class AppComponent implements AfterViewInit {
   title = 'gsap-scroll-animation-with-angular';
 
   @ViewChild('frame') canvas!: ElementRef<HTMLCanvasElement>;
-  context!: CanvasRenderingContext2D | null;
+  private context!: CanvasRenderingContext2D | null;
 
   frames: Frame = {
     currentIndex: 0,
     maxIndex: 382,
   };
 
-  images: HTMLImageElement[] = [];
+  private images: HTMLImageElement[] = [];
   imagesLoaded = 0;
+  private resizeTimeout!: any;
 
   ngAfterViewInit() {
     this.context = this.canvas.nativeElement.getContext('2d');
+    this.disableScroll(); // Disable scrolling initially
     this.preloadImages();
-    this.handleResize(); // Ensure the canvas resizes correctly
+    this.handleResize();
+  }
+
+  disableScroll() {
+    document.body.style.overflow = 'hidden';
+  }
+
+  enableScroll() {
+    document.body.style.overflow = 'auto';
   }
 
   preloadImages() {
@@ -46,6 +56,7 @@ export class AppComponent implements AfterViewInit {
         this.imagesLoaded++;
         if (this.imagesLoaded === this.frames.maxIndex) {
           this.loadImage(this.frames.currentIndex);
+          this.enableScroll(); // Re-enable scrolling once all images are loaded
           this.startAnimation();
         }
       };
@@ -56,19 +67,14 @@ export class AppComponent implements AfterViewInit {
   loadImage(index: number) {
     if (index >= 0 && index <= this.frames.maxIndex && this.context) {
       const img = this.images[index];
-
       const canvasElement = this.canvas.nativeElement;
-      const imgWidth = img.width;
-      const imgHeight = img.height;
 
-      // Calculate the scaling factors and offset positions
-      const scale = Math.max(canvasElement.width / imgWidth, canvasElement.height / imgHeight);
-      const newWidth = imgWidth * scale;
-      const newHeight = imgHeight * scale;
+      const scale = Math.max(canvasElement.width / img.width, canvasElement.height / img.height);
+      const newWidth = img.width * scale;
+      const newHeight = img.height * scale;
       const offsetX = (canvasElement.width - newWidth) / 2;
       const offsetY = (canvasElement.height - newHeight) / 2;
 
-      // Clear the canvas and draw the image
       this.context.clearRect(0, 0, canvasElement.width, canvasElement.height);
       this.context.imageSmoothingEnabled = true;
       this.context.imageSmoothingQuality = 'high';
@@ -85,23 +91,33 @@ export class AppComponent implements AfterViewInit {
         start: 'top top',
         scrub: 2,
         // markers: true,
-      }
+      },
     }).to(this.frames, {
       currentIndex: this.frames.maxIndex,
       duration: 1,
       ease: 'none',
       onUpdate: () => {
-        this.loadImage(Math.floor(this.frames.currentIndex));
+        requestAnimationFrame(() => {
+          this.loadImage(Math.floor(this.frames.currentIndex));
+        });
       },
     });
   }
 
-  @HostListener('window:resize', ['$event'])
+  @HostListener('window:resize')
+  onResize() {
+    clearTimeout(this.resizeTimeout);
+    this.resizeTimeout = setTimeout(() => this.handleResize(), 200);
+  }
+
   handleResize() {
-    if (this.canvas) {
-      this.canvas.nativeElement.width = window.innerWidth;
-      this.canvas.nativeElement.height = window.innerHeight;
-      this.loadImage(this.frames.currentIndex); // Reload the current image to fit the new size
-    }
+    const canvasElement = this.canvas.nativeElement;
+    canvasElement.width = window.innerWidth;
+    canvasElement.height = window.innerHeight;
+    this.loadImage(this.frames.currentIndex);
+  }
+
+  get loadingPercentage(): number {
+    return Math.floor((this.imagesLoaded / this.frames.maxIndex) * 100);
   }
 }

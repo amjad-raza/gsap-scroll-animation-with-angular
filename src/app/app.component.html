@@ -1,5 +1,14 @@
+<!-- Loading Overlay -->
+ @if (loadingPercentage != 100) {
+   <div class="absolute top-0 left-0 z-10 bg-black h-screen w-full flex items-center justify-center text-white">
+     {{ imagesLoaded !== frames.maxIndex ? loadingPercentage + '%' + ' Loading...' : 'Scroll to start' }}
+   </div>
+ }
+
+<!-- Main Content -->
 <div class="w-full bg-gray-500">
-  <div class="parent relative top-0 left-0 w-full h-[1000vh] ">
+  <div class="parent relative top-0 left-0 w-full h-[1000vh]">
+    <!-- Sticky Container for Canvas -->
     <div class="w-full h-screen sticky top-0 left-0">
       <canvas class="w-full h-screen" id="frame" #frame></canvas>
     </div>
